@@ -1,0 +1,14 @@
+{
+    "manifest_version": 3,
+    "name": "UET LMS DMC ",
+    "version": "1.0",
+    "description": "Calculate your DMC score for UET LMS",
+ 
+    "content_scripts": [
+      {
+        "matches": ["https://lms.uet.edu.pk/*"],
+        "js": ["content.js"],
+        "run_at": "document_idle"
+      }
+    ]
+  }
