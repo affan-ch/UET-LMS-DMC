@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "UET LMS DMC ",
-    "version": "1.0",
+    "version": "2.0",
     "description": "Calculate your DMC score for UET LMS",
  
     "content_scripts": [
@@ -10,5 +10,11 @@
         "js": ["content.js"],
         "run_at": "document_idle"
       }
-    ]
+    ],
+    "icons": {
+      "16": "logo.png",
+      "32": "logo.png",
+      "48": "logo.png",
+      "128": "logo.png"
+    }
   }
