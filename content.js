@@ -163,13 +163,18 @@ function main() {
 
                 // calculate the Credit Hours of the current semester and add it to the table
                 var cell4 = document.createElement("td");
-                var ch = object.courses.reduce((a, b) => a + parseFloat(b.creditHour), 0);
+
+                // Exclude the courses with grade "I" and "IP" from the calculation
+                var ch = object.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.creditHour) : a, 0);
+
                 cell4.textContent = ch.toFixed(1);
                 row.appendChild(cell4);
 
                 // calculate the Grade Points of the current semester and add it to the table
                 var cell5 = document.createElement("td");
-                var gp = object.courses.reduce((a, b) => a + parseFloat(b.gradePoint), 0);
+
+                // Exclude the courses with grade "I" and "IP" from the calculation
+                var gp = object.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.gradePoint) : a, 0);
                 cell5.textContent = gp.toFixed(2);
                 row.appendChild(cell5);
 
@@ -182,10 +187,11 @@ function main() {
                 // if the current semester is not the first semester, show the CGPA
                 if (count > 1) {
                     var cell7 = document.createElement("td");
-                    // calculate the Credit Points till the current semester
-                    var totalcpa = semestersData.slice(0, count).reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => a + parseFloat(b.gradePoint), 0)), 0);
-                    // calculate the Credit Hours till the current semester
-                    var totalch = semestersData.slice(0, count).reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => a + parseFloat(b.creditHour), 0)), 0);
+                    // calculate the Credit Points till the current semester excluding the courses with grade "I" and "IP"                    
+                    var totalcpa = semestersData.slice(0, count).reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.gradePoint) : a, 0)), 0);
+
+                    // calculate the Credit Hours till the current semester excluding the courses with grade "I" and "IP"
+                    var totalch = semestersData.slice(0, count).reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.creditHour) : a, 0)), 0);
 
                     // Add the CGPA to the table of the current semester
                     cell7.textContent = "CGPA: " + (totalcpa / totalch).toFixed(3);
@@ -207,9 +213,10 @@ function main() {
             row.style.backgroundColor = "#ffffff";
             row.style.fontWeight = "bold";
 
-            // calculate the CGPA
-            var gp = semestersData.reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => a + parseFloat(b.gradePoint), 0)), 0);
-            var ch = semestersData.reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => a + parseFloat(b.creditHour), 0)), 0);
+            // calculate the CGPA excluding the courses with grade "I" and "IP"
+            var gp = semestersData.reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.gradePoint) : a, 0)), 0);
+            var ch = semestersData.reduce((a, b) => a + parseFloat(b.courses.reduce((a, b) => b.grade !== "I" && b.grade !== "IP" ? a + parseFloat(b.creditHour) : a, 0)), 0);
+
             var cgpa = gp / ch;
 
             // Add the CGPA to the table
