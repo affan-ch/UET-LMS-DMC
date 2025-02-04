@@ -234,6 +234,82 @@ function main() {
         console.log(err);
     }
 
+
+    try {
+        // Create the "Print DMC" button
+        var printButton = document.createElement("button");
+        printButton.textContent = "Print DMC to PDF";
+        printButton.classList.add("oe_button");
+        printButton.classList.add("oe_highlight");
+        printButton.style.marginLeft = "5px";
+
+        // Append the button to a specific location
+        var header = document.querySelector('body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(4) > tbody > tr:nth-child(2) > td:nth-child(1)');
+        if (header) {
+            header.appendChild(printButton);
+        }
+
+        // Add the event listener to the button to open the print window
+        printButton.addEventListener("click", function () {
+            
+            // Inject print-specific CSS into the document
+            var style = document.createElement("style");
+            style.innerHTML = `
+             @media print {
+                 body * {
+                     visibility: hidden;
+                 }
+                 #notebook_page_9 > div > div > table, #notebook_page_9 > div > div > table * {
+                     visibility: visible;
+                 }
+                     
+                 #notebook_page_9 > div > div {
+                     position: absolute;
+                        left: 0;
+                        top: 0;
+                 }                     
+             }`;
+            document.head.appendChild(style);
+
+            // Contains Text "Student DMC"
+            const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
+            
+            // Contains Registration Number and Student Name
+            const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
+
+            // Contains Final CGPA
+            const tfoot = document.querySelector("#notebook_page_9 > div > div > table > tfoot > tr:nth-child(3)");
+            if (tfoot) {
+                tfoot.style.display = "none";
+            }
+
+            // Contains the table to be printed
+            const printContainer = document.querySelector("#notebook_page_9 > div > div ");
+
+            // Append Registration Number and Student Name to the top of the table
+            if (printContainer) {
+                if (t2) {
+                    printContainer.insertBefore(t2, printContainer.firstChild);
+                }
+
+                // Insert t1 before the table
+                if (t1) {
+                    printContainer.insertBefore(t1, printContainer.firstChild);
+                }
+            }
+
+            // Trigger the print dialog for the current page
+            window.print();
+
+            // Reverse the changes by reload
+            window.location.reload();
+        });
+
+    }
+    catch (err) {
+        console.log(err);
+    }
+
 }
 
 // Call the main function when the page is loaded
