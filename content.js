@@ -137,7 +137,6 @@ function main() {
                     }
                 }
             }
-            console.log(semestersData)
 
             var count = 1;
             var previous = 0;
@@ -251,7 +250,7 @@ function main() {
 
         // Add the event listener to the button to open the print window
         printButton.addEventListener("click", function () {
-            
+
             // Inject print-specific CSS into the document
             var style = document.createElement("style");
             style.innerHTML = `
@@ -273,14 +272,33 @@ function main() {
 
             // Contains Text "Student DMC"
             const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
-            
+
             // Contains Registration Number and Student Name
             const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
 
-            // Contains Final CGPA
-            const tfoot = document.querySelector("#notebook_page_9 > div > div > table > tfoot > tr:nth-child(3)");
+            // Contains Last Semester GPA Row and Final CGPA Row
+            const tfoot = document.querySelector("#notebook_page_9 > div > div > table > tfoot");
             if (tfoot) {
                 tfoot.style.display = "none";
+            }
+
+             // Check if tfoot exists
+             if (tfoot) {
+                // Get all <tr> elements inside the <tfoot>
+                const trElements = tfoot.querySelectorAll("tr");
+
+                // Get the <tbody> where you want to append the copied rows
+                const tbody = document.querySelector("#notebook_page_9 > div > div > table > tbody");
+
+                // Check if tbody exists
+                if (tbody) {
+                    // Loop through each <tr> element in the <tfoot>
+                    trElements.forEach(function (tr) {
+                        // Append the cloned <tr> to the <tbody>
+                        tbody.appendChild(tr);
+                    });
+                    tbody.appendChild(document.createElement("tr"));
+                }
             }
 
             // Contains the table to be printed
@@ -300,6 +318,18 @@ function main() {
 
             // Trigger the print dialog for the current page
             window.print();
+
+            // Show white screen After print to prevent the user from interacting with the page
+            var whiteScreen = document.createElement("div");
+            whiteScreen.style.position = "fixed";
+            whiteScreen.style.top = "0";
+            whiteScreen.style.left = "0";
+            whiteScreen.style.width = "100%";
+            whiteScreen.style.height = "100%";
+            whiteScreen.style.backgroundColor = "white";
+            whiteScreen.style.zIndex = "9999";
+            whiteScreen.style.opacity = "1";
+            whiteScreen.style.display = "block";
 
             // Reverse the changes by reload
             window.location.reload();
