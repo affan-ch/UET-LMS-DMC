@@ -7,6 +7,16 @@ function main() {
     if (!window.location.href.includes("view_type=form&model=obe.grade.book&menu_id=572")) {
         return;
     }
+
+    // Get the refresh count from sessionStorage (default to 0)
+    let refreshCount = sessionStorage.getItem("refreshCount") || 0;
+
+    // If refresh count is 0, reload and increment count
+    if (refreshCount < 1) {
+        sessionStorage.setItem("refreshCount", "1"); // Mark as reloaded
+        window.location.reload(); // Reload only once
+    }
+
     try {
         // Select the table parent container
         var select = '/html/body/div[2]/table/tbody/tr/td[2]/div/div/div/div/div/div[2]/div/div[4]/div/div/div/div/table[5]/tbody/tr/td/div/div';
@@ -280,10 +290,7 @@ function main() {
             const tfoot = document.querySelector("#notebook_page_9 > div > div > table > tfoot");
             if (tfoot) {
                 tfoot.style.display = "none";
-            }
 
-             // Check if tfoot exists
-             if (tfoot) {
                 // Get all <tr> elements inside the <tfoot>
                 const trElements = tfoot.querySelectorAll("tr");
 
@@ -349,5 +356,8 @@ window.onpopstate = function (event) {
 
     if (hash.includes(hashLoc)) {
         main();
+    }
+    else{
+        sessionStorage.removeItem("refreshCount");
     }
 }
