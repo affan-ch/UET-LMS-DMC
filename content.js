@@ -240,131 +240,183 @@ function main() {
         console.log(err);
     }
 
-
     try {
         // Create the "Print DMC" button
-        var printButton = document.createElement("button");
-        printButton.textContent = "Print DMC to PDF";
-        printButton.classList.add("oe_button");
-        printButton.classList.add("oe_highlight");
-        printButton.style.marginLeft = "5px";
+        var printPdfButton = document.createElement("button");
+        printPdfButton.textContent = "Print DMC to PDF";
+        printPdfButton.classList.add("oe_button");
+        printPdfButton.classList.add("oe_highlight");
+        printPdfButton.style.marginLeft = "5px";
+
+        var printImageButton = document.createElement("button");
+        printImageButton.textContent = "Print DMC to PNG";
+        printImageButton.classList.add("oe_button");
+        printImageButton.classList.add("oe_highlight");
+        printImageButton.style.marginLeft = "5px";
 
         // Append the button to a specific location
         var header = document.querySelector('body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(4) > tbody > tr:nth-child(2) > td:nth-child(1)');
         if (header) {
-            header.appendChild(printButton);
+            header.appendChild(printPdfButton);
+            header.appendChild(printImageButton);
         }
 
-        // Add the event listener to the button to open the print window
-        printButton.addEventListener("click", function () {
+        function printSetup(type) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // Select all divs with IDs that match "notebook_page_X"
+                    const notebookPages = document.querySelectorAll("div[id^='notebook_page_']:not(.oe_form_invisible)");
 
-            // Select all divs with IDs that match "notebook_page_X"
-            const notebookPages = document.querySelectorAll("div[id^='notebook_page_']:not(.oe_form_invisible)");
+                    let notebookPage = null;
 
-            let notebookPage = null;
+                    // Loop through each found div and check for the correct table
+                    notebookPages.forEach(page => {
+                        const table = page.querySelector("table");
+                        if (table) {
+                            const ths = table.querySelectorAll("th");
+                            for (let th of ths) {
+                                if (th.textContent.trim() === "Semester name") {
+                                    notebookPage = page; // Found the correct div
+                                    return;
+                                }
+                            }
+                        }
+                    });
 
-            // Loop through each found div and check for the correct table
-            notebookPages.forEach(page => {
-                const table = page.querySelector("table");
-                if (table) {
-                    const ths = table.querySelectorAll("th");
-                    for (let th of ths) {
-                        if (th.textContent.trim() === "Semester name") {
-                            notebookPage = page; // Found the correct div
-                            return;
+                    if (!notebookPage) {
+                        reject("No valid notebook page found.");
+                        return;
+                    }
+
+                    // Contains Text "Student DMC"
+                    const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
+
+                    // Contains Registration Number and Student Name
+                    const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
+
+                    // Inject print-specific CSS into the document
+                    var style = document.createElement("style");
+                    style.innerHTML = `
+                        @media print {
+                            body * {
+                                visibility: hidden;
+                            }
+                            #${notebookPage.id} > div > div > table, 
+                            #${notebookPage.id} > div > div > table *, 
+                            #${notebookPage.id} > div > div > table + table, 
+                            #${notebookPage.id} > div > div > table + table * {
+                                visibility: visible;
+                            }
+                            #${notebookPage.id} > div > div {
+                                visibility: visible;
+                                position: absolute;
+                                left: 0;
+                                top: 10px;
+                            }       
+                            /* Ensure t1 and t2 are always visible */
+                            #${t1?.id}, #${t2?.id} {
+                                visibility: visible !important;
+                                display: block !important;
+                                position: relative !important;
+                            }              
+                        }`;
+                    document.head.appendChild(style);
+
+                    // Contains Last Semester GPA Row and Final CGPA Row
+                    const tfoot = notebookPage.querySelector("div > div > table > tfoot");
+                    if (tfoot) {
+                        tfoot.style.display = "none";
+
+                        // Get all <tr> elements inside the <tfoot>
+                        const trElements = tfoot.querySelectorAll("tr");
+
+                        // Get the <tbody> where you want to append the copied rows
+                        const tbody = notebookPage.querySelector("div > div > table > tbody");
+
+                        // Check if tbody exists
+                        if (tbody) {
+                            // Loop through each <tr> element in the <tfoot>
+                            trElements.forEach(function (tr) {
+                                // Append the cloned <tr> to the <tbody>
+                                tbody.appendChild(tr);
+                            });
+                            tbody.appendChild(document.createElement("tr"));
                         }
                     }
+
+                    // Contains the table to be printed
+                    const printContainer = document.querySelector(`#${notebookPage.id} > div > div`);
+
+                    // Append Registration Number and Student Name to the top of the table
+                    if (printContainer) {
+                        if (t2) {
+                            printContainer.insertBefore(t2, printContainer.firstChild);
+                        }
+
+                        if (t1) {
+                            printContainer.insertBefore(t1, printContainer.firstChild);
+                        }
+                    }
+
+                    if(type === "png") {
+                        // Ensure html2canvas is loaded before executing the function
+                        if (typeof html2canvas !== "undefined") {
+                            const element = document.querySelector(`#${notebookPage.id}`); // The div to capture
+
+                            html2canvas(element, { scale: 2 }).then(canvas => {
+                                let image = canvas.toDataURL("image/png"); // Convert to PNG
+                                let link = document.createElement("a");
+                                link.href = image;
+                                link.download = "dmc.png"; // File name for download
+                                link.click();
+
+                                // ✅ Resolve the promise after all operations are completed
+                                resolve("Print setup completed successfully.");
+                            });
+                        } else {
+                            console.error("html2canvas is not loaded. Make sure it is included in manifest.json.");
+                        }
+                    }
+
+                    if(type === "pdf") {
+                        window.print(); // Open the print dialog
+
+                        // ✅ Resolve the promise after all operations are completed
+                        resolve("Print setup completed successfully.");
+                    }
+                    
+                } catch (error) {
+                    reject(`Error in print setup: ${error}`);
                 }
             });
-
-            // Contains Text "Student DMC"
-            const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
-
-            // Contains Registration Number and Student Name
-            const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
-
-            // Inject print-specific CSS into the document
-            var style = document.createElement("style");
-            style.innerHTML = `
-                @media print {
-                    body * {
-                        visibility: hidden;
-                    }
-                    #${notebookPage.id} > div > div > table, 
-                    #${notebookPage.id} > div > div > table *, 
-                    #${notebookPage.id} > div > div > table + table, 
-                    #${notebookPage.id} > div > div > table + table * {
-                        visibility: visible;
-                    }
-                    #${notebookPage.id} > div > div {
-                        visibility: visible;
-                        position: absolute;
-                            left: 0;
-                            top: 10px;
-                    }       
-                    /* Ensure t1 and t2 are always visible */
-                    #${t1?.id}, #${t2?.id} {
-                        visibility: visible !important;
-                        display: block !important;
-                        position: relative !important;
-                    }              
-                }`;
-            document.head.appendChild(style);
+        }
 
 
-            // Contains Last Semester GPA Row and Final CGPA Row
-            const tfoot = notebookPage.querySelector("div > div > table > tfoot");
-            if (tfoot) {
-                tfoot.style.display = "none";
+        // Add the event listener to the button to open the print window
+        printPdfButton.addEventListener("click", async function () {
+            try {
+                let message = await printSetup("pdf");
+                console.log(message);
+                
+                // Reverse the changes by reload
+                window.location.reload();
+            } catch (error) {
+                console.error(error);
+            }
+        });
 
-                // Get all <tr> elements inside the <tfoot>
-                const trElements = tfoot.querySelectorAll("tr");
 
-                // Get the <tbody> where you want to append the copied rows
-                const tbody = notebookPage.querySelector("div > div > table > tbody");
+        printImageButton.addEventListener("click", async function () {
+            try {
+                let message = await printSetup("png");
+                console.log(message);
 
-                // Check if tbody exists
-                if (tbody) {
-                    // Loop through each <tr> element in the <tfoot>
-                    trElements.forEach(function (tr) {
-                        // Append the cloned <tr> to the <tbody>
-                        tbody.appendChild(tr);
-                    });
-                    tbody.appendChild(document.createElement("tr"));
-                }
+                // Reverse the changes by reload
+                window.location.reload();
+            } catch (error) {
+                console.error(error);
             }
 
-            // Contains the table to be printed
-            const printContainer = document.querySelector(`#${notebookPage.id} > div > div`);
-
-            // Append Registration Number and Student Name to the top of the table
-            if (printContainer) {
-                if (t2) {
-                    printContainer.insertBefore(t2, printContainer.firstChild);
-                }
-
-                if (t1) {
-                    printContainer.insertBefore(t1, printContainer.firstChild);
-                }
-            }
-
-            // Trigger the print dialog for the current page
-            window.print();
-
-            // Show white screen After print to prevent the user from interacting with the page
-            var whiteScreen = document.createElement("div");
-            whiteScreen.style.position = "fixed";
-            whiteScreen.style.top = "0";
-            whiteScreen.style.left = "0";
-            whiteScreen.style.width = "100%";
-            whiteScreen.style.height = "100%";
-            whiteScreen.style.backgroundColor = "white";
-            whiteScreen.style.zIndex = "9999";
-            whiteScreen.style.opacity = "1";
-            whiteScreen.style.display = "block";
-
-            // Reverse the changes by reload
-            window.location.reload();
         });
 
     }
@@ -375,7 +427,7 @@ function main() {
 }
 
 // Call the main function when the page is loaded
-window.onpopstate = function (event) {
+window.onpopstate = function () {
     const hashLoc = "view_type=form&model=obe.grade.book&menu_id=572"
     const hash = window.location.hash;;
 
