@@ -105,8 +105,9 @@ function main() {
                 }
             }
 
-            // If the grade is "WF" or "F", set the credit hour to 0, only if the course is passed in any subsequent semester
+            // If a course appears again in a later semester, its previous occurrences should not be counted in GPA/CGPA.
             let semestersData = obj;
+
             // Iterate through each semester
             for (let i = 0; i < semestersData.length; i++) {
                 let currentSemesterCourses = semestersData[i].courses;
@@ -115,30 +116,34 @@ function main() {
                 for (let j = 0; j < currentSemesterCourses.length; j++) {
                     let currentCourse = currentSemesterCourses[j];
 
-                    // Check if the grade is "WF" or "F"
-                    if (currentCourse.grade === "WF" || currentCourse.grade === "F") {
-                        let currentCourseCode = currentCourse.courseCode;
-                        let currentCourseTitle = currentCourse.courseTitle;
+                    // Store course code and title for comparison
+                    let currentCourseCode = currentCourse.courseCode;
+                    let currentCourseTitle = currentCourse.courseTitle;
 
-                        // Check subsequent semesters
-                        for (let k = i + 1; k < semestersData.length; k++) {
-                            let nextSemesterCourses = semestersData[k].courses;
+                    // Check subsequent semesters
+                    for (let k = i + 1; k < semestersData.length; k++) {
+                        let nextSemesterCourses = semestersData[k].courses;
 
-                            // Check if the course is passed in any subsequent semester
-                            for (let l = 0; l < nextSemesterCourses.length; l++) {
-                                let nextCourse = nextSemesterCourses[l];
-                                if (nextCourse.courseCode === currentCourseCode &&
-                                    nextCourse.courseTitle === currentCourseTitle &&
-                                    (nextCourse.grade !== "WF" && nextCourse.grade !== "F")) {
-                                    // Set credit hour to 0 in the previous semester
-                                    currentCourse.creditHour = "0.00";
-                                    break; // Move to the next course in the current semester
-                                }
+                        // Check if the course appears again in a later semester
+                        for (let l = 0; l < nextSemesterCourses.length; l++) {
+                            let nextCourse = nextSemesterCourses[l];
+
+                            // If the same course appears again in a later semester
+                            if (nextCourse.courseCode === currentCourseCode &&
+                                nextCourse.courseTitle === currentCourseTitle) {
+
+                                // Set credit hour and grade points to 0 in the previous semester since it should be ignored
+                                currentCourse.creditHour = "0.00";
+                                currentCourse.gradePoint = "0.00";
+
+                                // Stop checking further once we find a newer occurrence of the course
+                                break;
                             }
                         }
                     }
                 }
             }
+
 
             var count = 1;
             var previous = 0;
@@ -272,13 +277,11 @@ function main() {
                 }
             });
 
-
             // Contains Text "Student DMC"
             const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
 
             // Contains Registration Number and Student Name
             const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
-            
 
             // Inject print-specific CSS into the document
             var style = document.createElement("style");
@@ -339,7 +342,7 @@ function main() {
                 if (t2) {
                     printContainer.insertBefore(t2, printContainer.firstChild);
                 }
-                
+
                 if (t1) {
                     printContainer.insertBefore(t1, printContainer.firstChild);
                 }
