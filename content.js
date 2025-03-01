@@ -8,14 +8,6 @@ function main() {
         return;
     }
 
-    // Get the refresh count from sessionStorage (default to 0)
-    let refreshCount = sessionStorage.getItem("refreshCount") || 0;
-
-    // If refresh count is 0, reload and increment count
-    if (refreshCount < 1) {
-        sessionStorage.setItem("refreshCount", "1"); // Mark as reloaded
-        window.location.reload(); // Reload only once
-    }
 
     try {
         // Select the table parent container
@@ -232,7 +224,7 @@ function main() {
             row.insertCell(); // empty cell
             row.insertCell(); // empty cell
             var cell = row.insertCell(); // cgpa cell
-            cell.textContent = `CGPA: ${gp} ÷ ${ch} = ${cgpa.toFixed(3)}`; // cgpa value
+            cell.textContent = `CGPA: ${gp.toFixed(2)} ÷ ${ch} = ${cgpa.toFixed(3)}`; // cgpa value
 
             var form = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div");
             form.style.width = "900px"
@@ -261,33 +253,64 @@ function main() {
         // Add the event listener to the button to open the print window
         printButton.addEventListener("click", function () {
 
-            // Inject print-specific CSS into the document
-            var style = document.createElement("style");
-            style.innerHTML = `
-             @media print {
-                 body * {
-                     visibility: hidden;
-                 }
-                 #notebook_page_9 > div > div > table, #notebook_page_9 > div > div > table * {
-                     visibility: visible;
-                 }
-                     
-                 #notebook_page_9 > div > div {
-                     position: absolute;
-                        left: 0;
-                        top: 0;
-                 }                     
-             }`;
-            document.head.appendChild(style);
+            // Select all divs with IDs that match "notebook_page_X"
+            const notebookPages = document.querySelectorAll("div[id^='notebook_page_']:not(.oe_form_invisible)");
+
+            let notebookPage = null;
+
+            // Loop through each found div and check for the correct table
+            notebookPages.forEach(page => {
+                const table = page.querySelector("table");
+                if (table) {
+                    const ths = table.querySelectorAll("th");
+                    for (let th of ths) {
+                        if (th.textContent.trim() === "Semester name") {
+                            notebookPage = page; // Found the correct div
+                            return;
+                        }
+                    }
+                }
+            });
+
 
             // Contains Text "Student DMC"
             const t1 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(1)");
 
             // Contains Registration Number and Student Name
             const t2 = document.querySelector("body > div.openerp.openerp_webclient_container > table > tbody > tr > td.oe_application > div > div > div > div > div > div.oe_view_manager_view_form > div > div.oe_form_container > div > div > div > div > table:nth-child(2)");
+            
+
+            // Inject print-specific CSS into the document
+            var style = document.createElement("style");
+            style.innerHTML = `
+                @media print {
+                    body * {
+                        visibility: hidden;
+                    }
+                    #${notebookPage.id} > div > div > table, 
+                    #${notebookPage.id} > div > div > table *, 
+                    #${notebookPage.id} > div > div > table + table, 
+                    #${notebookPage.id} > div > div > table + table * {
+                        visibility: visible;
+                    }
+                    #${notebookPage.id} > div > div {
+                        visibility: visible;
+                        position: absolute;
+                            left: 0;
+                            top: 10px;
+                    }       
+                    /* Ensure t1 and t2 are always visible */
+                    #${t1?.id}, #${t2?.id} {
+                        visibility: visible !important;
+                        display: block !important;
+                        position: relative !important;
+                    }              
+                }`;
+            document.head.appendChild(style);
+
 
             // Contains Last Semester GPA Row and Final CGPA Row
-            const tfoot = document.querySelector("#notebook_page_9 > div > div > table > tfoot");
+            const tfoot = notebookPage.querySelector("div > div > table > tfoot");
             if (tfoot) {
                 tfoot.style.display = "none";
 
@@ -295,7 +318,7 @@ function main() {
                 const trElements = tfoot.querySelectorAll("tr");
 
                 // Get the <tbody> where you want to append the copied rows
-                const tbody = document.querySelector("#notebook_page_9 > div > div > table > tbody");
+                const tbody = notebookPage.querySelector("div > div > table > tbody");
 
                 // Check if tbody exists
                 if (tbody) {
@@ -309,15 +332,14 @@ function main() {
             }
 
             // Contains the table to be printed
-            const printContainer = document.querySelector("#notebook_page_9 > div > div ");
+            const printContainer = document.querySelector(`#${notebookPage.id} > div > div`);
 
             // Append Registration Number and Student Name to the top of the table
             if (printContainer) {
                 if (t2) {
                     printContainer.insertBefore(t2, printContainer.firstChild);
                 }
-
-                // Insert t1 before the table
+                
                 if (t1) {
                     printContainer.insertBefore(t1, printContainer.firstChild);
                 }
@@ -356,8 +378,5 @@ window.onpopstate = function (event) {
 
     if (hash.includes(hashLoc)) {
         main();
-    }
-    else{
-        sessionStorage.removeItem("refreshCount");
     }
 }
